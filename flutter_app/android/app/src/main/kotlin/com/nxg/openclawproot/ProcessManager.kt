@@ -57,7 +57,38 @@ class ProcessManager(
     // Common proot flags shared by both install and gateway modes.
     // Matches proot-distro's bind mounts exactly.
     // ================================================================
+    /**
+     * Ensure resolv.conf exists before any proot invocation.
+     * This is the single chokepoint — every proot operation flows through
+     * commonProotFlags(), so resolv.conf is guaranteed for all callers.
+     */
+    private fun ensureResolvConf() {
+        val content = "nameserver 8.8.8.8\nnameserver 8.8.4.4\n"
+
+        // Primary: host-side file used by --bind mount
+        try {
+            val resolvFile = File(configDir, "resolv.conf")
+            if (!resolvFile.exists() || resolvFile.length() == 0L) {
+                resolvFile.parentFile?.mkdirs()
+                resolvFile.writeText(content)
+            }
+        } catch (_: Exception) {}
+
+        // Fallback: write directly into rootfs /etc/resolv.conf
+        // so DNS works even if the bind-mount fails
+        try {
+            val rootfsResolv = File(rootfsDir, "etc/resolv.conf")
+            if (!rootfsResolv.exists() || rootfsResolv.length() == 0L) {
+                rootfsResolv.parentFile?.mkdirs()
+                rootfsResolv.writeText(content)
+            }
+        } catch (_: Exception) {}
+    }
+
     private fun commonProotFlags(): List<String> {
+        // Guarantee resolv.conf exists before building the bind-mount list
+        ensureResolvConf()
+
         val prootPath = getProotPath()
         val procFakes = "$configDir/proc_fakes"
         val sysFakes = "$configDir/sys_fakes"

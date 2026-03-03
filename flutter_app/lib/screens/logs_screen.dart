@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../app.dart';
 import '../providers/gateway_provider.dart';
+import '../services/screenshot_service.dart';
 
 class LogsScreen extends StatefulWidget {
   const LogsScreen({super.key});
@@ -14,6 +15,7 @@ class LogsScreen extends StatefulWidget {
 class _LogsScreenState extends State<LogsScreen> {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
+  final _screenshotKey = GlobalKey();
   bool _autoScroll = true;
   String _filter = '';
 
@@ -32,6 +34,11 @@ class _LogsScreenState extends State<LogsScreen> {
       appBar: AppBar(
         title: const Text('Gateway Logs'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.camera_alt_outlined),
+            tooltip: 'Screenshot',
+            onPressed: _takeScreenshot,
+          ),
           IconButton(
             icon: Icon(
               _autoScroll ? Icons.vertical_align_bottom : Icons.vertical_align_top,
@@ -74,7 +81,9 @@ class _LogsScreenState extends State<LogsScreen> {
             ),
           ),
           Expanded(
-            child: Consumer<GatewayProvider>(
+            child: RepaintBoundary(
+              key: _screenshotKey,
+              child: Consumer<GatewayProvider>(
               builder: (context, provider, _) {
                 final logs = provider.state.logs;
                 final filtered = _filter.isEmpty
@@ -119,6 +128,7 @@ class _LogsScreenState extends State<LogsScreen> {
                 );
               },
             ),
+            ),
           ),
         ],
       ),
@@ -136,6 +146,18 @@ class _LogsScreenState extends State<LogsScreen> {
       return AppColors.mutedText;
     }
     return theme.colorScheme.onSurface;
+  }
+
+  Future<void> _takeScreenshot() async {
+    final path = await ScreenshotService.capture(_screenshotKey, prefix: 'logs');
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(path != null
+            ? 'Screenshot saved: ${path.split('/').last}'
+            : 'Failed to capture screenshot'),
+      ),
+    );
   }
 
   void _copyLogs(BuildContext context) {

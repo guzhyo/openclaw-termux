@@ -12,6 +12,7 @@ import android.os.IBinder
 import android.os.PowerManager
 import io.flutter.plugin.common.EventChannel
 import java.io.BufferedReader
+import java.io.File
 import java.io.InputStreamReader
 
 class GatewayService : Service() {
@@ -94,6 +95,27 @@ class GatewayService : Service() {
                 } catch (e: Exception) {
                     emitLog("[WARN] writeResolvConf failed: ${e.message}")
                 }
+
+                // Last-resort: verify resolv.conf exists, create inline if not
+                val resolvContent = "nameserver 8.8.8.8\nnameserver 8.8.4.4\n"
+                try {
+                    val resolvFile = File(filesDir, "config/resolv.conf")
+                    if (!resolvFile.exists() || resolvFile.length() == 0L) {
+                        resolvFile.parentFile?.mkdirs()
+                        resolvFile.writeText(resolvContent)
+                        emitLog("[INFO] resolv.conf created (inline fallback)")
+                    }
+                } catch (e: Exception) {
+                    emitLog("[WARN] inline resolv.conf fallback failed: ${e.message}")
+                }
+                // Also write into rootfs /etc/ so DNS works even if bind-mount fails
+                try {
+                    val rootfsResolv = File(filesDir, "rootfs/ubuntu/etc/resolv.conf")
+                    if (!rootfsResolv.exists() || rootfsResolv.length() == 0L) {
+                        rootfsResolv.parentFile?.mkdirs()
+                        rootfsResolv.writeText(resolvContent)
+                    }
+                } catch (_: Exception) {}
 
                 gatewayProcess = pm.startProotProcess("openclaw gateway --verbose")
                 updateNotificationRunning()
