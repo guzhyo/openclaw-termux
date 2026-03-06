@@ -3,32 +3,132 @@ name: Build APK
 on:
   push:
     branches: [ main, master ]
+    paths:
+      - 'flutter_app/**'
+      - '.github/workflows/build_apk.yml'
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - debug
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.24.5'
           channel: 'stable'
+          cache: true
+
+      - name: Verify Flutter setup
+        run: |
+          flutter doctor -v
+          flutter --version
 
       - name: Install dependencies
         working-directory: ./flutter_app
-        run: flutter pub get
+        run: |
+          flutter pub get
+
+      - name: Analyze code
+        working-directory: ./flutter_app
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings || true
 
       - name: Build APK
         working-directory: ./flutter_app
-        run: flutter build apk --release
+        run: |
+          if [ "${{ github.event.inputs.build_type }}" = "debug" ]; then
+            flutter build apk --debug
+            echo "APK_PATH=build/app/outputs/flutter-apk/app-debug.apk" >> $GITHUB_ENV
+            echo "APK_NAME=OpenClaw-v1.8.3-debug.apk" >> $GITHUB_ENV
+          else
+            flutter build apk --release
+            echo "APK_PATH=build/app/outputs/flutter-apk/app-release.apk" >> $GITHUB_ENV
+            echo "APK_NAME=OpenClaw-v1.8.3-release.apk" >> $GITHUB_ENV
+          fi
+
+      - name: Sign APK (Release only)
+        if: github.event.inputs.build_type != 'debug'
+        working-directory: ./flutter_app
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Signing APK with provided keystore..."
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore.jks
+            jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+              -keystore android/app/keystore.jks \
+              -storepass "$KEYSTORE_PASSWORD" \
+              -keypass "$KEY_PASSWORD" \
+              "${{ env.APK_PATH }}" "$KEY_ALIAS"
+            rm android/app/keystore.jks
+            echo "APK signed successfully"
+          else
+            echo "No keystore provided, using unsigned APK"
+          fi
+
+      - name: Get version info
+        id: version
+        working-directory: ./flutter_app
+        run: |
+          VERSION=$(grep "version:" pubspec.yaml | head -1 | awk '{print $2}')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Build version: $VERSION"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: openclaw-apk
-          path: flutter_app/build/app/outputs/flutter-apk/app-release.apk
+          name: ${{ env.APK_NAME }}
+          path: flutter_app/${{ env.APK_PATH }}
+          if-no-files-found: error
+
+      - name: Create Release (on tag push)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: flutter_app/${{ env.APK_PATH }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Notify success
+        if: needs.build.result == 'success'
+        run: |
+          echo "✅ APK build completed successfully!"
+          echo "Download the APK from the Artifacts section."
+
+      - name: Notify failure
+        if: needs.build.result == 'failure'
+        run: |
+          echo "❌ APK build failed!"
+          echo "Please check the build logs for details."
