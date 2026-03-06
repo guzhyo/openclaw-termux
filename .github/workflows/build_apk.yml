@@ -50,12 +50,19 @@ jobs:
           bash scripts/fetch-proot-binaries.sh
           echo "PRoot binaries downloaded successfully"
 
+      - name: Copy PRoot binaries to flutter_app
+        run: |
+          echo "Copying PRoot binaries to flutter_app/android/app/src/main/jniLibs/"
+          mkdir -p flutter_app/android/app/src/main/jniLibs
+          cp -r android/app/src/main/jniLibs/* flutter_app/android/app/src/main/jniLibs/
+          echo "Copy completed"
+
       - name: Verify PRoot binaries
         run: |
           echo "Verifying PRoot binaries..."
-          ls -la android/app/src/main/jniLibs/
+          ls -la flutter_app/android/app/src/main/jniLibs/
           for arch in arm64-v8a armeabi-v7a x86_64 x86; do
-            if [ -f "android/app/src/main/jniLibs/$arch/libproot.so" ]; then
+            if [ -f "flutter_app/android/app/src/main/jniLibs/$arch/libproot.so" ]; then
               echo "✓ libproot.so found for $arch"
             else
               echo "⚠ libproot.so not found for $arch"
