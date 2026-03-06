@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../app.dart';
+import '../l10n/app_strings.dart';
 import '../services/ssh_service.dart';
 import 'packages_screen.dart';
 
@@ -76,7 +77,7 @@ class _SshScreenState extends State<SshScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('错误: $e')),
         );
       }
     } finally {
@@ -88,7 +89,7 @@ class _SshScreenState extends State<SshScreen> {
     final password = _passwordController.text;
     if (password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password cannot be empty')),
+        const SnackBar(content: Text('密码不能为空')),
       );
       return;
     }
@@ -98,13 +99,13 @@ class _SshScreenState extends State<SshScreen> {
       if (mounted) {
         _passwordController.clear();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Root password updated')),
+          const SnackBar(content: Text('Root密码已更新')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to set password: $e')),
+          SnackBar(content: Text('设置密码失败: $e')),
         );
       }
     } finally {
@@ -115,7 +116,7 @@ class _SshScreenState extends State<SshScreen> {
   void _copyToClipboard(String text) {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Copied to clipboard')),
+      const SnackBar(content: Text('已复制到剪贴板')),
     );
   }
 
@@ -125,7 +126,7 @@ class _SshScreenState extends State<SshScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('SSH Access')),
+      appBar: AppBar(title: const Text(AppStrings.sshServer)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _installed
@@ -144,12 +145,12 @@ class _SshScreenState extends State<SshScreen> {
             Icon(Icons.vpn_key, size: 64, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
-              'OpenSSH not installed',
+              'OpenSSH 未安装',
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
-              'Install the OpenSSH package first from the Packages screen.',
+              '请先从软件包页面安装 OpenSSH 软件包。',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
@@ -164,7 +165,7 @@ class _SshScreenState extends State<SshScreen> {
                 _refresh();
               },
               icon: const Icon(Icons.extension),
-              label: const Text('Open Packages'),
+              label: const Text('打开软件包'),
             ),
           ],
         ),
@@ -179,7 +180,7 @@ class _SshScreenState extends State<SshScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         // Service control
-        _sectionHeader(theme, 'SERVICE CONTROL'),
+        _sectionHeader(theme, '服务控制'),
         const SizedBox(height: 8),
         Card(
           child: Padding(
@@ -204,7 +205,7 @@ class _SshScreenState extends State<SshScreen> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      _running ? 'SSH server running' : 'SSH server stopped',
+                      _running ? 'SSH 服务器运行中' : 'SSH 服务器已停止',
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -217,7 +218,7 @@ class _SshScreenState extends State<SshScreen> {
                     controller: _portController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Port',
+                      labelText: AppStrings.port,
                       hintText: '8022',
                     ),
                   ),
@@ -233,7 +234,7 @@ class _SshScreenState extends State<SshScreen> {
                                   width: 20,
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
-                              : const Text('Stop Server'),
+                              : const Text('停止服务器'),
                         )
                       : FilledButton(
                           onPressed: _toggling ? null : _toggleSshd,
@@ -246,7 +247,7 @@ class _SshScreenState extends State<SshScreen> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text('Start Server'),
+                              : const Text('启动服务器'),
                         ),
                 ),
               ],
@@ -256,7 +257,7 @@ class _SshScreenState extends State<SshScreen> {
         const SizedBox(height: 24),
 
         // Root password
-        _sectionHeader(theme, 'ROOT PASSWORD'),
+        _sectionHeader(theme, 'Root 密码'),
         const SizedBox(height: 8),
         Card(
           child: Padding(
@@ -265,7 +266,7 @@ class _SshScreenState extends State<SshScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Set the root password for SSH login.',
+                  '设置 SSH 登录的 root 密码。',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -275,8 +276,8 @@ class _SshScreenState extends State<SshScreen> {
                   controller: _passwordController,
                   obscureText: true,
                   decoration: const InputDecoration(
-                    labelText: 'New password',
-                    hintText: 'Enter password',
+                    labelText: '新密码',
+                    hintText: '输入密码',
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -293,7 +294,7 @@ class _SshScreenState extends State<SshScreen> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Set Password'),
+                        : const Text(AppStrings.setPassword),
                   ),
                 ),
               ],
@@ -304,7 +305,7 @@ class _SshScreenState extends State<SshScreen> {
         // Connection info (when running)
         if (_running) ...[
           const SizedBox(height: 24),
-          _sectionHeader(theme, 'CONNECTION INFO'),
+          _sectionHeader(theme, AppStrings.connectionInfo),
           const SizedBox(height: 8),
           Card(
             child: Padding(
@@ -312,16 +313,16 @@ class _SshScreenState extends State<SshScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _infoRow(theme, 'User', 'root'),
+                  _infoRow(theme, AppStrings.username, AppStrings.root),
                   const Divider(height: 24),
-                  _infoRow(theme, 'Port', port),
+                  _infoRow(theme, AppStrings.port, port),
                   if (_ips.isNotEmpty) ...[
                     const Divider(height: 24),
-                    _infoRow(theme, 'IP Addresses', _ips.join(', ')),
+                    _infoRow(theme, AppStrings.ipAddress, _ips.join(', ')),
                   ],
                   const Divider(height: 24),
                   Text(
-                    'Connect from another device:',
+                    '从其他设备连接：',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../constants.dart';
 import '../models/setup_state.dart';
 import 'native_bridge.dart';
+import '../l10n/app_strings.dart';
 
 class BootstrapService {
   final Dio _dio = Dio();
@@ -26,18 +27,18 @@ class BootstrapService {
         return const SetupState(
           step: SetupStep.complete,
           progress: 1.0,
-          message: 'Setup complete',
+          message: AppStrings.setupComplete,
         );
       }
       return const SetupState(
         step: SetupStep.checkingStatus,
         progress: 0.0,
-        message: 'Setup required',
+        message: '需要设置',
       );
     } catch (e) {
       return SetupState(
         step: SetupStep.error,
-        error: 'Failed to check status: $e',
+        error: '检查状态失败: $e',
       );
     }
   }
@@ -55,9 +56,9 @@ class BootstrapService {
       onProgress(const SetupState(
         step: SetupStep.checkingStatus,
         progress: 0.0,
-        message: 'Setting up directories...',
+        message: AppStrings.settingUpDirectories,
       ));
-      _updateSetupNotification('Setting up directories...', progress: 2);
+      _updateSetupNotification(AppStrings.settingUpDirectories, progress: 2);
       try { await NativeBridge.setupDirs(); } catch (_) {}
       try { await NativeBridge.writeResolv(); } catch (_) {}
 
@@ -84,11 +85,11 @@ class BootstrapService {
       } catch (_) {}
       final tarPath = '$filesDir/tmp/ubuntu-rootfs.tar.gz';
 
-      _updateSetupNotification('Downloading Ubuntu rootfs...', progress: 5);
+      _updateSetupNotification(AppStrings.downloadingRootfs, progress: 5);
       onProgress(const SetupState(
         step: SetupStep.downloadingRootfs,
         progress: 0.0,
-        message: 'Downloading Ubuntu rootfs...',
+        message: AppStrings.downloadingRootfs,
       ));
 
       // Clean up any partial download from previous attempt
@@ -107,28 +108,28 @@ class BootstrapService {
             final totalMb = (total / 1024 / 1024).toStringAsFixed(1);
             // Map download to 5-30% of overall progress
             final notifProgress = 5 + (progress * 25).round();
-            _updateSetupNotification('Downloading rootfs: $mb / $totalMb MB', progress: notifProgress);
+            _updateSetupNotification('正在下载: $mb / $totalMb MB', progress: notifProgress);
             onProgress(SetupState(
               step: SetupStep.downloadingRootfs,
               progress: progress,
-              message: 'Downloading: $mb MB / $totalMb MB',
+              message: '正在下载: $mb MB / $totalMb MB',
             ));
           }
         },
       );
 
       // Step 2: Extract rootfs (30-45%)
-      _updateSetupNotification('Extracting rootfs...', progress: 30);
-      onProgress(const SetupState(
+      _updateSetupNotification(AppStrings.extractingRootfs, progress: 30);
+      onProgress(SetupState(
         step: SetupStep.extractingRootfs,
         progress: 0.0,
-        message: 'Extracting rootfs (this takes a while)...',
+        message: AppStrings.extractingRootfs,
       ));
       await NativeBridge.extractRootfs(tarPath);
       onProgress(const SetupState(
         step: SetupStep.extractingRootfs,
         progress: 1.0,
-        message: 'Rootfs extracted',
+        message: AppStrings.rootfsExtracted,
       ));
 
       // Install bionic bypass + cwd-fix + node-wrapper BEFORE using node.
@@ -137,11 +138,11 @@ class BootstrapService {
 
       // Step 3: Install Node.js (45-80%)
       // Fix permissions inside proot (Java extraction may miss execute bits)
-      _updateSetupNotification('Fixing rootfs permissions...', progress: 45);
-      onProgress(const SetupState(
+      _updateSetupNotification(AppStrings.fixingPermissions, progress: 45);
+      onProgress(SetupState(
         step: SetupStep.installingNode,
         progress: 0.0,
-        message: 'Fixing rootfs permissions...',
+        message: AppStrings.fixingPermissions,
       ));
       // Blanket recursive chmod on all bin/lib directories.
       // Java tar extraction loses execute bits; dpkg needs tar, xz,
@@ -160,11 +161,11 @@ class BootstrapService {
       // Now that our proot matches Termux exactly (env -i, clean host env,
       // proper flags), dpkg works normally. No need for Java-side deb
       // extraction — let dpkg+tar handle it inside proot like Termux does.
-      _updateSetupNotification('Configuring apt mirror...', progress: 48);
-      onProgress(const SetupState(
+      _updateSetupNotification(AppStrings.configuringAptMirror, progress: 48);
+      onProgress(SetupState(
         step: SetupStep.installingNode,
         progress: 0.1,
-        message: 'Configuring apt mirror...',
+        message: AppStrings.configuringAptMirror,
       ));
 
       // Replace Ubuntu sources with China mirror for faster download
@@ -176,19 +177,19 @@ class BootstrapService {
         'echo "Mirror configured"',
       );
 
-      _updateSetupNotification('Updating package lists...', progress: 49);
-      onProgress(const SetupState(
+      _updateSetupNotification(AppStrings.updatingPackageLists, progress: 49);
+      onProgress(SetupState(
         step: SetupStep.installingNode,
         progress: 0.1,
-        message: 'Updating package lists...',
+        message: AppStrings.updatingPackageLists,
       ));
       await NativeBridge.runInProot('apt-get update -y');
 
-      _updateSetupNotification('Installing base packages...', progress: 52);
-      onProgress(const SetupState(
+      _updateSetupNotification(AppStrings.installingBasePackages, progress: 52);
+      onProgress(SetupState(
         step: SetupStep.installingNode,
         progress: 0.15,
-        message: 'Installing base packages...',
+        message: AppStrings.installingBasePackages,
       ));
       // ca-certificates: HTTPS for npm/git
       // git: openclaw has git deps (@whiskeysockets/libsignal-node)
@@ -219,12 +220,12 @@ class BootstrapService {
       final nodeTarUrl = AppConstants.getNodeTarballUrl(arch);
       final nodeTarPath = '$filesDir/tmp/nodejs.tar.xz';
 
-      onProgress(const SetupState(
+      onProgress(SetupState(
         step: SetupStep.installingNode,
         progress: 0.3,
-        message: 'Downloading Node.js ${AppConstants.nodeVersion}...',
+        message: '正在下载 Node.js ${AppConstants.nodeVersion}...',
       ));
-      _updateSetupNotification('Downloading Node.js...', progress: 55);
+      _updateSetupNotification('正在下载 Node.js...', progress: 55);
 
       // Clean up any partial download from previous attempt
       final nodeTarFile = File(nodeTarPath);
@@ -242,29 +243,29 @@ class BootstrapService {
             final totalMb = (total / 1024 / 1024).toStringAsFixed(1);
             // Map Node download to 55-70% of overall
             final notifProgress = 55 + ((received / total) * 15).round();
-            _updateSetupNotification('Downloading Node.js: $mb / $totalMb MB', progress: notifProgress);
+            _updateSetupNotification('正在下载 Node.js: $mb / $totalMb MB', progress: notifProgress);
             onProgress(SetupState(
               step: SetupStep.installingNode,
               progress: progress,
-              message: 'Downloading Node.js: $mb MB / $totalMb MB',
+              message: '正在下载 Node.js: $mb MB / $totalMb MB',
             ));
           }
         },
       );
 
-      _updateSetupNotification('Extracting Node.js...', progress: 72);
-      onProgress(const SetupState(
+      _updateSetupNotification('正在解压 Node.js...', progress: 72);
+      onProgress(SetupState(
         step: SetupStep.installingNode,
         progress: 0.75,
-        message: 'Extracting Node.js...',
+        message: '正在解压 Node.js...',
       ));
       await NativeBridge.extractNodeTarball(nodeTarPath);
 
-      _updateSetupNotification('Verifying Node.js...', progress: 78);
-      onProgress(const SetupState(
+      _updateSetupNotification('正在验证 Node.js...', progress: 78);
+      onProgress(SetupState(
         step: SetupStep.installingNode,
         progress: 0.9,
-        message: 'Verifying Node.js...',
+        message: '正在验证 Node.js...',
       ));
       // node-wrapper.js patches broken proot syscalls before loading npm.
       // /usr/local/bin is on PATH, so node finds the tarball's npm.
@@ -278,15 +279,15 @@ class BootstrapService {
       onProgress(const SetupState(
         step: SetupStep.installingNode,
         progress: 1.0,
-        message: 'Node.js installed',
+        message: 'Node.js 已安装',
       ));
 
       // Step 4: Install OpenClaw (80-98%)
-      _updateSetupNotification('Installing OpenClaw...', progress: 82);
-      onProgress(const SetupState(
+      _updateSetupNotification(AppStrings.installingOpenClaw, progress: 82);
+      onProgress(SetupState(
         step: SetupStep.installingOpenClaw,
         progress: 0.0,
-        message: 'Installing OpenClaw (this may take a few minutes)...',
+        message: AppStrings.installingOpenClaw,
       ));
       // Install openclaw — fork/exec works now with our Termux-matching proot.
       await NativeBridge.runInProot(
@@ -294,36 +295,36 @@ class BootstrapService {
         timeout: 1800,
       );
 
-      _updateSetupNotification('Creating bin wrappers...', progress: 92);
-      onProgress(const SetupState(
+      _updateSetupNotification(AppStrings.creatingBinWrappers, progress: 92);
+      onProgress(SetupState(
         step: SetupStep.installingOpenClaw,
         progress: 0.7,
-        message: 'Creating bin wrappers...',
+        message: AppStrings.creatingBinWrappers,
       ));
       // npm global install creates symlinks for bin entries, but symlinks
       // can fail silently in proot. Create shell wrappers from Java side
       // (reads package.json directly from rootfs filesystem — no escaping).
       await NativeBridge.createBinWrappers('openclaw');
 
-      _updateSetupNotification('Verifying OpenClaw...', progress: 96);
-      onProgress(const SetupState(
+      _updateSetupNotification(AppStrings.verifyingOpenClaw, progress: 96);
+      onProgress(SetupState(
         step: SetupStep.installingOpenClaw,
         progress: 0.9,
-        message: 'Verifying OpenClaw...',
+        message: AppStrings.verifyingOpenClaw,
       ));
       await NativeBridge.runInProot('openclaw --version || echo openclaw_installed');
       onProgress(const SetupState(
         step: SetupStep.installingOpenClaw,
         progress: 1.0,
-        message: 'OpenClaw installed',
+        message: 'OpenClaw 已安装',
       ));
 
       // Step 5: Bionic Bypass already installed (before node verification)
-      _updateSetupNotification('Setup complete!', progress: 100);
+      _updateSetupNotification('设置完成!', progress: 100);
       onProgress(const SetupState(
         step: SetupStep.configuringBypass,
         progress: 1.0,
-        message: 'Bionic Bypass configured',
+        message: AppStrings.bionicBypassConfigured,
       ));
 
       // Done
@@ -331,19 +332,19 @@ class BootstrapService {
       onProgress(const SetupState(
         step: SetupStep.complete,
         progress: 1.0,
-        message: 'Setup complete! Ready to start the gateway.',
+        message: '设置完成! 准备启动网关。',
       ));
     } on DioException catch (e) {
       _stopSetupService();
       onProgress(SetupState(
         step: SetupStep.error,
-        error: 'Download failed: ${e.message}. Check your internet connection.',
+        error: '下载失败: ${e.message}。请检查网络连接。',
       ));
     } catch (e) {
       _stopSetupService();
       onProgress(SetupState(
         step: SetupStep.error,
-        error: 'Setup failed: $e',
+        error: '设置失败: $e',
       ));
     }
   }

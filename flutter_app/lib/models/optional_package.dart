@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_strings.dart';
 
 /// Metadata for an optional development tool that can be installed
 /// inside the proot Ubuntu environment.
@@ -33,8 +34,8 @@ class OptionalPackage {
 
   static const goPackage = OptionalPackage(
     id: 'go',
-    name: 'Go (Golang)',
-    description: 'Go programming language compiler and tools',
+    name: 'Go',
+    description: AppStrings.goDescription,
     icon: Icons.integration_instructions,
     color: Colors.cyan,
     installCommand:
@@ -56,7 +57,7 @@ class OptionalPackage {
   static const brewPackage = OptionalPackage(
     id: 'brew',
     name: 'Homebrew',
-    description: 'The missing package manager for Linux',
+    description: AppStrings.homebrewDescription,
     icon: Icons.science,
     color: Colors.amber,
     installCommand:
@@ -88,7 +89,7 @@ class OptionalPackage {
   static const sshPackage = OptionalPackage(
     id: 'ssh',
     name: 'OpenSSH',
-    description: 'SSH client and server for secure remote access',
+    description: AppStrings.sshDescription,
     icon: Icons.vpn_key,
     color: Colors.teal,
     installCommand:

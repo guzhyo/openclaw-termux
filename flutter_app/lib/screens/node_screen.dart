@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../app.dart';
+import '../l10n/app_strings.dart';
 import '../providers/node_provider.dart';
 import '../services/preferences_service.dart';
 import '../widgets/node_controls.dart';
@@ -53,7 +54,7 @@ class _NodeScreenState extends State<NodeScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Node Configuration')),
+      appBar: AppBar(title: const Text(AppStrings.nodeConfiguration)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Consumer<NodeProvider>(
@@ -67,7 +68,7 @@ class _NodeScreenState extends State<NodeScreen> {
                     const SizedBox(height: 16),
 
                     // Gateway Connection
-                    _sectionHeader(theme, 'GATEWAY CONNECTION'),
+                    _sectionHeader(theme, AppStrings.gatewayConnection),
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -75,8 +76,8 @@ class _NodeScreenState extends State<NodeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             RadioListTile<bool>(
-                              title: const Text('Local Gateway'),
-                              subtitle: const Text('Auto-pair with gateway on this device'),
+                              title: const Text('本地网关'),
+                              subtitle: const Text('自动配对此设备上的网关'),
                               value: true,
                               groupValue: _isLocal,
                               onChanged: (value) {
@@ -84,8 +85,8 @@ class _NodeScreenState extends State<NodeScreen> {
                               },
                             ),
                             RadioListTile<bool>(
-                              title: const Text('Remote Gateway'),
-                              subtitle: const Text('Connect to a gateway on another device'),
+                              title: const Text('远程网关'),
+                              subtitle: const Text('连接到另一台设备上的网关'),
                               value: false,
                               groupValue: _isLocal,
                               onChanged: (value) {
@@ -97,7 +98,7 @@ class _NodeScreenState extends State<NodeScreen> {
                               TextField(
                                 controller: _hostController,
                                 decoration: const InputDecoration(
-                                  labelText: 'Gateway Host',
+                                  labelText: '网关主机',
                                   hintText: '192.168.1.100',
                                 ),
                               ),
@@ -105,7 +106,7 @@ class _NodeScreenState extends State<NodeScreen> {
                               TextField(
                                 controller: _portController,
                                 decoration: const InputDecoration(
-                                  labelText: 'Gateway Port',
+                                  labelText: '网关端口',
                                   hintText: '18789',
                                 ),
                                 keyboardType: TextInputType.number,
@@ -114,9 +115,9 @@ class _NodeScreenState extends State<NodeScreen> {
                               TextField(
                                 controller: _tokenController,
                                 decoration: const InputDecoration(
-                                  labelText: 'Gateway Token',
-                                  hintText: 'Paste token from gateway dashboard URL',
-                                  helperText: 'Found in dashboard URL after #token=',
+                                  labelText: '网关令牌',
+                                  hintText: '从网关仪表板URL中粘贴令牌',
+                                  helperText: '在仪表板URL的 #token= 之后',
                                   prefixIcon: Icon(Icons.key),
                                 ),
                                 obscureText: true,
@@ -133,7 +134,7 @@ class _NodeScreenState extends State<NodeScreen> {
                                   }
                                 },
                                 icon: const Icon(Icons.link),
-                                label: const Text('Connect'),
+                                label: const Text(AppStrings.confirm),
                               ),
                             ],
                           ],
@@ -144,7 +145,7 @@ class _NodeScreenState extends State<NodeScreen> {
 
                     // Pairing Status
                     if (state.pairingCode != null) ...[
-                      _sectionHeader(theme, 'PAIRING'),
+                      _sectionHeader(theme, '配对'),
                       Card(
                         child: Padding(
                           padding: const EdgeInsets.all(16),
@@ -153,7 +154,7 @@ class _NodeScreenState extends State<NodeScreen> {
                               const Icon(Icons.qr_code, size: 48),
                               const SizedBox(height: 8),
                               Text(
-                                'Approve this code on the gateway:',
+                                '在网关上批准此代码：',
                                 style: theme.textTheme.bodyMedium,
                               ),
                               const SizedBox(height: 8),
@@ -173,56 +174,56 @@ class _NodeScreenState extends State<NodeScreen> {
                     ],
 
                     // Capabilities
-                    _sectionHeader(theme, 'CAPABILITIES'),
+                    _sectionHeader(theme, AppStrings.capabilities),
                     _capabilityTile(
                       theme,
-                      'Camera',
-                      'Capture photos and video clips',
+                      '摄像头',
+                      '拍摄照片和视频片段',
                       Icons.camera_alt,
                     ),
                     _capabilityTile(
                       theme,
-                      'Canvas',
-                      'Navigate and interact with web pages',
+                      '画布',
+                      '浏览和与网页交互',
                       Icons.web,
                     ),
                     _capabilityTile(
                       theme,
-                      'Location',
-                      'Get device GPS coordinates',
+                      '位置',
+                      '获取设备GPS坐标',
                       Icons.location_on,
                     ),
                     _capabilityTile(
                       theme,
-                      'Screen Recording',
-                      'Record device screen (requires consent each time)',
+                      '屏幕录制',
+                      '录制设备屏幕（每次需要同意）',
                       Icons.screen_share,
                     ),
                     _capabilityTile(
                       theme,
-                      'Flashlight',
-                      'Toggle device torch on/off',
+                      '手电筒',
+                      '开关设备手电筒',
                       Icons.flashlight_on,
                     ),
                     _capabilityTile(
                       theme,
-                      'Vibration',
-                      'Trigger haptic feedback and vibration patterns',
+                      '振动',
+                      '触发触觉反馈和振动模式',
                       Icons.vibration,
                     ),
                     _capabilityTile(
                       theme,
-                      'Sensors',
-                      'Read accelerometer, gyroscope, magnetometer, barometer',
+                      '传感器',
+                      '读取加速度计、陀螺仪、磁力计、气压计',
                       Icons.sensors,
                     ),
                     const SizedBox(height: 16),
 
                     // Device Info
                     if (state.deviceId != null) ...[
-                      _sectionHeader(theme, 'DEVICE INFO'),
+                      _sectionHeader(theme, '设备信息'),
                       ListTile(
-                        title: const Text('Device ID'),
+                        title: const Text('设备ID'),
                         subtitle: SelectableText(
                           state.deviceId!,
                           style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
@@ -233,7 +234,7 @@ class _NodeScreenState extends State<NodeScreen> {
                     const SizedBox(height: 16),
 
                     // Logs
-                    _sectionHeader(theme, 'NODE LOGS'),
+                    _sectionHeader(theme, '节点日志'),
                     Card(
                       child: Container(
                         height: 200,
@@ -241,7 +242,7 @@ class _NodeScreenState extends State<NodeScreen> {
                         child: state.logs.isEmpty
                             ? Center(
                                 child: Text(
-                                  'No logs yet',
+                                  '暂无日志',
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant,
                                   ),
