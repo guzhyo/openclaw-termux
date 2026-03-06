@@ -160,7 +160,23 @@ class BootstrapService {
       // Now that our proot matches Termux exactly (env -i, clean host env,
       // proper flags), dpkg works normally. No need for Java-side deb
       // extraction — let dpkg+tar handle it inside proot like Termux does.
-      _updateSetupNotification('Updating package lists...', progress: 48);
+      _updateSetupNotification('Configuring apt mirror...', progress: 48);
+      onProgress(const SetupState(
+        step: SetupStep.installingNode,
+        progress: 0.1,
+        message: 'Configuring apt mirror...',
+      ));
+
+      // Replace Ubuntu sources with China mirror for faster download
+      await NativeBridge.runInProot(
+        'cp /etc/apt/sources.list /etc/apt/sources.list.bak && '
+        'sed -i "s/archive.ubuntu.com/mirrors.aliyun.com/g" /etc/apt/sources.list && '
+        'sed -i "s/security.ubuntu.com/mirrors.aliyun.com/g" /etc/apt/sources.list && '
+        'sed -i "s/ports.ubuntu.com/mirrors.aliyun.com/g" /etc/apt/sources.list && '
+        'echo "Mirror configured"',
+      );
+
+      _updateSetupNotification('Updating package lists...', progress: 49);
       onProgress(const SetupState(
         step: SetupStep.installingNode,
         progress: 0.1,
