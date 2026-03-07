@@ -179,7 +179,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
             stepNumber: num,
             label: state.step == step ? state.message : label,
             isActive: state.step == step,
-            isComplete: state.stepNumber > step.index + 1 || state.isComplete,
+            isComplete: state.stepNumber > step.index || state.isComplete,
             hasError: state.hasError && state.step == step,
             progress: state.step == step ? state.progress : null,
           ),
