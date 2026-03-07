@@ -185,30 +185,32 @@ class BootstrapService {
       ));
       await NativeBridge.runInProot('apt-get update -y');
 
-      _updateSetupNotification(AppStrings.installingBasePackages, progress: 52);
-      onProgress(SetupState(
-        step: SetupStep.installingNode,
-        progress: 0.15,
-        message: AppStrings.installingBasePackages,
-      ));
-      // ca-certificates: HTTPS for npm/git
-      // git: openclaw has git deps (@whiskeysockets/libsignal-node)
-      // python3, make, g++: node-gyp needs these to compile native addons
-      //   (npm's bundled node-gyp runs as a JS module, not a spawned process,
-      //    so proot-compat.js spawn mock can't intercept it)
-      // dpkg extracts via tar inside proot — permissions are correct.
-      // Post-install scripts (update-ca-certificates) run automatically.
-      // Pre-configure tzdata to avoid interactive continent/timezone prompt
-      // (tzdata is a dependency of python3 and ignores DEBIAN_FRONTEND on
-      // first install if no timezone is pre-set).
+      // Pre-configure tzdata to avoid interactive prompt
       await NativeBridge.runInProot(
         'ln -sf /usr/share/zoneinfo/Etc/UTC /etc/localtime && '
         'echo "Etc/UTC" > /etc/timezone',
       );
-      await NativeBridge.runInProot(
-        'apt-get install -y --no-install-recommends '
-        'ca-certificates git python3 make g++',
-      );
+
+      // Install base packages one by one with progress updates
+      final packages = [
+        ('ca-certificates', 'HTTPS 证书', 0.15),
+        ('git', 'Git 版本控制', 0.17),
+        ('python3', 'Python 3', 0.20),
+        ('make', 'Make 构建工具', 0.22),
+        ('g++', 'C++ 编译器', 0.25),
+      ];
+
+      for (final (pkg, desc, prog) in packages) {
+        _updateSetupNotification('正在安装 $desc...', progress: 52 + (prog * 100).toInt());
+        onProgress(SetupState(
+          step: SetupStep.installingNode,
+          progress: prog,
+          message: '正在安装 $desc ($pkg)...',
+        ));
+        await NativeBridge.runInProot(
+          'apt-get install -y --no-install-recommends $pkg',
+        );
+      }
 
       // Git config (.gitconfig) is written by installBionicBypass() on the
       // Java side — directly to $rootfsDir/root/.gitconfig — rewrites
