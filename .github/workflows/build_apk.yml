@@ -71,17 +71,26 @@ jobs:
         working-directory: ./flutter_app
         run: flutter analyze --no-fatal-infos --no-fatal-warnings || true
 
+      - name: Get version
+        id: get_version
+        working-directory: ./flutter_app
+        run: |
+          VERSION=$(grep "^version:" pubspec.yaml | sed 's/version: //g' | sed 's/+.*//g')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "App version: $VERSION"
+
       - name: Build APK
         working-directory: ./flutter_app
         run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
           if [ "${{ github.event.inputs.build_type }}" = "debug" ]; then
             flutter build apk --debug
             echo "APK_PATH=build/app/outputs/flutter-apk/app-debug.apk" >> $GITHUB_ENV
-            echo "APK_NAME=OpenClaw-v1.8.3-debug.apk" >> $GITHUB_ENV
+            echo "APK_NAME=OpenClaw-v${VERSION}-debug.apk" >> $GITHUB_ENV
           else
             flutter build apk --release
             echo "APK_PATH=build/app/outputs/flutter-apk/app-release.apk" >> $GITHUB_ENV
-            echo "APK_NAME=OpenClaw-v1.8.3-release.apk" >> $GITHUB_ENV
+            echo "APK_NAME=OpenClaw-v${VERSION}-release.apk" >> $GITHUB_ENV
           fi
 
       - name: Sign APK (Release only)
