@@ -56,9 +56,45 @@ class _TerminalScreenState extends State<TerminalScreen> {
     });
   }
 
+  bool _showedSafetyWarning = false;
+
   Future<void> _startPty() async {
     _pty?.kill();
     _pty = null;
+
+    // Show safety warning before starting terminal
+    if (!_showedSafetyWarning && mounted) {
+      _showedSafetyWarning = true;
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('安全警告'),
+            ],
+          ),
+          content: const Text(
+            '终端具有完整的系统访问权限。\n\n'
+            '⚠️ 警告：\n'
+            '• 不要执行 rm -rf /sdcard 或类似命令\n'
+            '• 这会永久删除您的照片和文件\n\n'
+            '✓ 建议：\n'
+            '• 仅在 /root 目录下操作\n'
+            '• 备份重要数据后再使用',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('我已了解'),
+            ),
+          ],
+        ),
+      );
+    }
+
     try {
       // Ensure dirs + resolv.conf exist before proot starts (#40).
       try { await NativeBridge.setupDirs(); } catch (_) {}
